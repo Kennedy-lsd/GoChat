@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>WebSocket Chat</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			padding: 20px;
+		}
+
+		#messages {
+			border: 1px solid #ccc;
+			padding: 10px;
+			height: 300px;
+			overflow-y: scroll;
+			margin-bottom: 10px;
+		}
+
+		#messageInput {
+			width: calc(100% - 100px);
+		}
+	</style>
+</head>
+
+<body>
+	<h1>WebSocket Chat</h1>
+	<div>
+		<label for="usernameInput">Username:</label>
+		<input id="usernameInput" type="text" placeholder="Enter your username" />
+	</div>
+	<div id="messages"></div>
+	<input id="messageInput" type="text" placeholder="Type a message..." />
+	<button id="sendButton">Send</button>
+
+	<script>
+		const ws = new WebSocket("ws://localhost:8080/ws");
+
+		const messagesDiv = document.getElementById("messages");
+		const messageInput = document.getElementById("messageInput");
+		const sendButton = document.getElementById("sendButton");
+		const usernameInput = document.getElementById("usernameInput");
+
+		ws.onmessage = (event) => {
+			const messageData = JSON.parse(event.data);
+			const message = document.createElement("div");
+			message.innerHTML = `<strong>${messageData.username}:</strong> ${messageData.content}`;
+			messagesDiv.appendChild(message);
+			messagesDiv.scrollTop = messagesDiv.scrollHeight;
+		};
+
+		ws.onerror = (error) => {
+			console.error("WebSocket error:", error);
+		};
+
+		sendButton.addEventListener("click", () => {
+			const username = usernameInput.value.trim();
+			const messageContent = messageInput.value.trim();
+
+			if (!username) {
+				alert("Please enter a username.");
+				return;
+			}
+
+			if (messageContent) {
+				const message = {
+					username: username,
+					content: messageContent,
+				};
+				ws.send(JSON.stringify(message));
+				messageInput.value = "";
+			}
+		});
+
+		messageInput.addEventListener("keypress", (event) => {
+			if (event.key === "Enter") {
+				sendButton.click();
+			}
+		});
+
+		ws.onclose = () => {
+			const closedMessage = document.createElement("div");
+			closedMessage.textContent = "Connection closed";
+			closedMessage.style.color = "red";
+			messagesDiv.appendChild(closedMessage);
+		};
+	</script>
+</body>
+
+</html>
