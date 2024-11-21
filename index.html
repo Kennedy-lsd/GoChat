@@ -27,84 +27,41 @@
 
 <body>
 	<h1>WebSocket Chat</h1>
-	<div>
-		<label for="usernameInput">Username:</label>
-		<input id="usernameInput" type="text" placeholder="Enter your username" />
-	</div>
+	<div><label for="usernameInput">Username:</label><input id="usernameInput" type="text"
+			placeholder="Enter your username" /></div>
 	<div id="messages"></div>
 	<input id="messageInput" type="text" placeholder="Type a message..." />
 	<button id="sendButton">Send</button>
 
 	<script>
 		const ws = new WebSocket("ws://localhost:8080/ws");
-
 		const messagesDiv = document.getElementById("messages");
-		const messageInput = document.getElementById("messageInput");
-		const sendButton = document.getElementById("sendButton");
 		const usernameInput = document.getElementById("usernameInput");
-
-		const time = new Date().toLocaleTimeString([], {
-			hour: '2-digit',
-			minute: '2-digit'
-		});
+		const messageInput = document.getElementById("messageInput");
 
 		ws.onmessage = (event) => {
 			try {
-				const messageData = JSON.parse(event.data);
+				const { username, content, time } = JSON.parse(event.data);
 				const message = document.createElement("div");
-
-				const formattedTime = new Date(messageData.time).toLocaleTimeString([], {
-					hour: '2-digit',
-					minute: '2-digit'
-				});
-
-				message.innerHTML = `<strong>${messageData.username}:</strong> ${messageData.content} <span style="color: gray;">(${formattedTime})</span>`;
+				const formattedTime = new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+				message.innerHTML = `<strong>${username}:</strong> ${content} <span style="color: gray;">(${formattedTime})</span>`;
 				messagesDiv.appendChild(message);
 				messagesDiv.scrollTop = messagesDiv.scrollHeight;
-			} catch (error) {
-				console.error("Error parsing message:", error, event.data);
-			}
+			} catch (e) { console.error("Error:", e); }
 		};
 
-
-		sendButton.addEventListener("click", () => {
+		document.getElementById("sendButton").addEventListener("click", () => {
 			const username = usernameInput.value.trim();
 			const messageContent = messageInput.value.trim();
-
-			if (!username) {
-				alert("Please enter a username.");
-				return;
-			}
-
-			if (messageContent) {
-				const time = new Date().toLocaleTimeString([], {
-					hour: '2-digit',
-					minute: '2-digit'
-				});
-
-				const message = {
-					username: username,
-					content: messageContent,
-					time: time,
-				};
-				ws.send(JSON.stringify(message));
+			if (username && messageContent) {
+				const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+				ws.send(JSON.stringify({ username, content: messageContent, time }));
 				messageInput.value = "";
 			}
 		});
 
-
-		messageInput.addEventListener("keypress", (event) => {
-			if (event.key === "Enter") {
-				sendButton.click();
-			}
-		});
-
-		ws.onclose = () => {
-			const closedMessage = document.createElement("div");
-			closedMessage.textContent = "Connection closed";
-			closedMessage.style.color = "red";
-			messagesDiv.appendChild(closedMessage);
-		};
+		messageInput.addEventListener("keypress", (e) => { if (e.key === "Enter") document.getElementById("sendButton").click(); });
+		ws.onclose = () => { messagesDiv.innerHTML += "<div style='color:red;'>Connection closed</div>"; };
 	</script>
 </body>
 
