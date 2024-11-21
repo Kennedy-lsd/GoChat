@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Kennedy-lsd/GoChat/data"
 	"github.com/gorilla/websocket"
@@ -43,8 +44,16 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		log.Printf("Received message from %s: %s", message.Username, message.Content)
-		broadcast <- fmt.Sprintf(`{"username": "%s", "content": "%s"}`, message.Username, message.Content)
+		message.Time = time.Now().Format(time.RFC3339)
+
+		messageJSON, err := json.Marshal(message)
+		if err != nil {
+			log.Println("Error marshaling message:", err)
+			continue
+		}
+
+		log.Printf("Received message from %s: %s at %s", message.Username, message.Content, message.Time)
+		broadcast <- (string(messageJSON))
 	}
 }
 

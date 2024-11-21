@@ -43,17 +43,29 @@
 		const sendButton = document.getElementById("sendButton");
 		const usernameInput = document.getElementById("usernameInput");
 
+		const time = new Date().toLocaleTimeString([], {
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+
 		ws.onmessage = (event) => {
-			const messageData = JSON.parse(event.data);
-			const message = document.createElement("div");
-			message.innerHTML = `<strong>${messageData.username}:</strong> ${messageData.content}`;
-			messagesDiv.appendChild(message);
-			messagesDiv.scrollTop = messagesDiv.scrollHeight;
+			try {
+				const messageData = JSON.parse(event.data);
+				const message = document.createElement("div");
+
+				const formattedTime = new Date(messageData.time).toLocaleTimeString([], {
+					hour: '2-digit',
+					minute: '2-digit'
+				});
+
+				message.innerHTML = `<strong>${messageData.username}:</strong> ${messageData.content} <span style="color: gray;">(${formattedTime})</span>`;
+				messagesDiv.appendChild(message);
+				messagesDiv.scrollTop = messagesDiv.scrollHeight;
+			} catch (error) {
+				console.error("Error parsing message:", error, event.data);
+			}
 		};
 
-		ws.onerror = (error) => {
-			console.error("WebSocket error:", error);
-		};
 
 		sendButton.addEventListener("click", () => {
 			const username = usernameInput.value.trim();
@@ -65,14 +77,21 @@
 			}
 
 			if (messageContent) {
+				const time = new Date().toLocaleTimeString([], {
+					hour: '2-digit',
+					minute: '2-digit'
+				});
+
 				const message = {
 					username: username,
 					content: messageContent,
+					time: time,
 				};
 				ws.send(JSON.stringify(message));
 				messageInput.value = "";
 			}
 		});
+
 
 		messageInput.addEventListener("keypress", (event) => {
 			if (event.key === "Enter") {
